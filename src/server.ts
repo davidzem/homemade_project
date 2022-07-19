@@ -1,6 +1,6 @@
 import * as  dotenv from "dotenv"
 import * as  mongoDB from "mongodb"
-import {MONGO_CONN_STRING,  MONGO_DB_NAME, MongoDB_Collections, PORT} from "./config";
+import {MONGO_CONN_STRING,  MONGODB_NAME, MongoDB_Collections, PORT} from "./config";
 import {MongoClientOptions, ServerApiVersion} from "mongodb";
 import app from "./app";
 
@@ -21,7 +21,7 @@ const connectToDatabase = async () => {
 
         await client.connect();
 
-        const db: mongoDB.Db = client.db(MONGO_DB_NAME);
+        const db: mongoDB.Db = client.db(MONGODB_NAME);
 
         MongoDB_Collections.map((collectionName) => {
             collections[`${collectionName}`] = db.collection(collectionName)

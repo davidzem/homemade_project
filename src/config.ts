@@ -8,10 +8,11 @@ export const NODE_ENV = process.env.NODE_ENV;
 
 //Mongo db config
 export const MONGO_CONN_STRING = process.env.MONGO_CONN_STRING;
-export const MONGO_DB_NAME = process.env.MONGO_DB_NAME;
-export const MONGO_DB_IMAGES_COLLECTION = "images";
-export const MONGO_DB_DEPLOYMENTS_COLLECTION = "deployments";
-export const MongoDB_Collections = [MONGO_DB_IMAGES_COLLECTION, MONGO_DB_DEPLOYMENTS_COLLECTION];
+export const MONGODB_NAME = process.env.MONGO_DB_NAME;
+export const MONGODB_IMAGES_COLLECTION = "images";
+export const MONGODB_DEPLOYMENTS_COLLECTION = "deployments";
+export const MONGODB_USERS_COLLECTION = "users";
+export const MongoDB_Collections = [MONGODB_IMAGES_COLLECTION, MONGODB_DEPLOYMENTS_COLLECTION, MONGODB_USERS_COLLECTION];
 
 //jwt config
 export const JWT_SECRET = process.env.JWT_SECRET;

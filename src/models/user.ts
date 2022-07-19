@@ -7,7 +7,7 @@ export default class User {
     ) {
     }
 
-    getAuthDate = () => ({
+    getAuthData = () => ({
         name: this.name,
         email: this.email,
         role: this.role

@@ -3,6 +3,9 @@ import {collections} from "../server";
 import {MongoDB_Collections} from "../config";
 import Image from "../models/image";
 import {ObjectID} from "mongodb";
+import {catchAsync} from "../utils/catchAsync";
+import httpStatus = require("http-status");
+import ApiError from "../utils/ApiError";
 
 export const [images, deployments] = MongoDB_Collections;
 
@@ -32,23 +35,16 @@ const getAllCombosOfArray = (arr: Image[], length: number) => {
 };
 
 
-export const getCombinations = async (req: Request, res: Response) => {
+export const getCombinations = catchAsync(async (req: Request, res: Response) => {
     const {length} = req.query;
-
     let memoryArray: Image[][] = [];
+    let allImages = await collections[images].find({}).toArray() as unknown as Image[];
 
-    try {
-        let allImages = await collections[images].find({}).toArray() as unknown as Image[];
-
-        if (Number(length) <= allImages.length) {
-            memoryArray = getAllCombosOfArray(allImages, Number(length));
-            res.status(201).send(memoryArray)
-        } else res.status(400).send("Sorry amount of all images is less then the length of array you wanted")
-    } catch (e) {
-        res.status(400).send(e.message)
-    }
-
-};
+    if (Number(length) <= allImages.length) {
+        memoryArray = getAllCombosOfArray(allImages, Number(length));
+        res.status(httpStatus.OK).send(memoryArray)
+    } else throw new ApiError(httpStatus.BAD_REQUEST, "Sorry amount of all images is less then the length of array you wanted")
+});
 
 type SortOptions = {
     viaCreatedDate?: boolean,
@@ -92,152 +88,126 @@ const sortImages = (images: Image[], {viaCreatedDate, viaUpdatedDate = false, as
     return sorted
 };
 
-export const getAllImages = async (req: Request, res: Response) => {
+export const getAllImages = catchAsync(async (req: Request, res: Response) => {
     let {viaCreatedDate, viaUpdatedDate, asc} = req.query;
-    const assignQuery = () => {
 
-    };
-    // @ts-ignore
-    // const sorting = (images: Image[]) => {
-    //     let sorted = images;
-    //     if (viaCreatedDate) {
-    //         sorted = images.sort((imageA, imageB) => Number(imageA.getCreationDate()) - Number(imageB.getCreationDate()))
-    //     } else if (viaUpdatedDate) {
-    //         sorted = images.sort((imageA, imageB) => {
-    //             let updateDateA = imageA.getUpdatedDate();
-    //             let updateDateB = imageB.getUpdatedDate();
-    //             if (updateDateA !== null && updateDateB !== null) {
-    //                 return (Number(updateDateA) - Number(updateDateB))
-    //             } else if (updateDateB === null) {
-    //                 return (Number(updateDateA))
-    //             } else if (updateDateA === null) {
-    //                 return Number(updateDateB)
-    //             } else return null
-    //         })
-    //     }
-    //
-    //     return sorted
-    // };
-    try {
-        const result = await collections[images].find({}).toArray().then(r => r) as unknown as Image[];
-        let sorted: Image[] = result;
-        if (viaCreatedDate) {
-            sorted = sortImages(result, {
-                viaCreatedDate: (viaCreatedDate === "true"),
-                asc: (asc === "true")
-            });
-
-        }
-        if (viaUpdatedDate) {
-            sorted = sortImages(result, {viaUpdatedDate: (viaUpdatedDate === "true"), asc: (asc === "true")})
-        }
-
-
-        (sorted) ? res.status(200).send(sorted)
-            : res.status(500).send("Sorry , server mistake")
-    } catch (e) {
-        res.status(400).send("Provided data appears to be  incorrect ")
-
+    const result = await collections[images].find({}).toArray().then(r => r) as unknown as Image[];
+    let sorted: Image[] = result;
+    if (viaCreatedDate) {
+        sorted = sortImages(result, {
+            viaCreatedDate: (viaCreatedDate === "true"),
+            asc: (asc === "true")
+        });
     }
-};
+    if (viaUpdatedDate) {
+        sorted = sortImages(result, {viaUpdatedDate: (viaUpdatedDate === "true"), asc: (asc === "true")})
+    }
+    if (sorted) {
+        res.status(200).send(sorted)
+    } else {
+        throw  new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Sorry , server mistake")
+    }
 
-export const getImageViaID = async (req: Request, res: Response) => {
+});
+
+export const getImageViaID = catchAsync(async (req: Request, res: Response) => {
     const {id} = req.params;
     const query = {
         _id: new ObjectID(id)
     };
-    try {
-        const result = (await collections[images].findOne(query)) as unknown as Image;
-        result ? res.status(201).send(result)
-            : res.status(500).send("Sorry , server mistake")
-    } catch (e) {
-        res.status(400).send("Provided data appears to be  incorrect ")
+    const result = (await collections[images].findOne(query)) as unknown as Image;
+    if (result) {
+        res.status(201).send(result)
+    } else {
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Sorry , server mistake")
     }
-};
+
+});
 
 
-export const postImage = async (req: Request, res: Response) => {
+export const postImage = catchAsync(async (req: Request, res: Response) => {
     const image = req.body;
-    try {
-        if (!image.createdAt) {
-            image.createdAt = new Date()
-        }
-        let existingImage = await collections[images].findOne({name: image.name});
-        if (existingImage) {
-            res.status(400).send(`Sorry an image with the same name is already exists under id ${existingImage._id}`);
-            return
-        }
-        await collections[images].insertOne(image)
-            .then(r => res.status(201).send({message: `Successfully created an image `, data: r})
-            )
-            .catch(() => res.status(500).send("Sorry something went wrong"))
-    } catch (e) {
-        res.status(400).send(`Mistake occured: ${e.message}`)
-    }
-};
 
-export const updateImage = async (req: Request, res: Response) => {
+    if (!image.createdAt) {
+        image.createdAt = new Date()
+    }
+    let existingImage = await collections[images].findOne({name: image.name});
+    if (existingImage) {
+        res.status(400).send(`Sorry an image with the same name is already exists under id ${existingImage._id}`);
+        return
+    }
+    await collections[images].insertOne(image)
+        .then(r => res.status(201).send({message: `Successfully created an image `, data: r})
+        )
+        .catch(e => {
+            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Sorry server mistake")
+        })
+
+});
+
+
+export const updateImage = catchAsync(async (req: Request, res: Response) => {
     const {id} = req.params;
-    const updatedParty = req.body;
+    const updatedParty: any = {
+        name: req.body.name,
+        repository: req.body.repository,
+        version: req.body.version,
+        metadata: req.body.metadata
+    };
     const query = {_id: new ObjectID(id)};
     let shouldUpdate: boolean = false;
-    try {
-        let previousData = await collections[images].findOne(query);
-        console.log(previousData);
-        Object.keys(previousData).map(key => {
+    let previousData = await collections[images].findOne(query);
+    console.log(previousData);
+    Object.keys(updatedParty).map(key => {
+        if (typeof updatedParty[`${key}`] !== "object" && typeof previousData[`${key}`] !== "object") {
             if (previousData[`${key}`] !== updatedParty[`${key}`]) {
+                console.error(updatedParty[`${key}`], previousData[`${key}`]);
                 shouldUpdate = true;
                 return
             }
-        });
-        console.log(shouldUpdate);
-        if (shouldUpdate) {
-            await collections[images].updateOne(query, {
-                $set: {
-                    ...updatedParty,
-                    metadata: {...updatedParty.metadata, ...previousData.metadata},
-                    updatedDate: new Date()
-                }
+        } else {
+            shouldUpdate = !(JSON.stringify(previousData[`${key}`]) === JSON.stringify(updatedParty[`${key}`]))
+        }
+    });
+    console.log(shouldUpdate);
+    if (shouldUpdate) {
+        await collections[images].updateOne(query, {
+            $set: {
+                ...updatedParty,
+                metadata: {...updatedParty.metadata, ...previousData.metadata},
+                updatedDate: new Date()
+            }
+        })
+            .then(() => res.send("Updated successfully"))
+            .catch(e => {
+                throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e.message)
             })
-                .then(() => res.send("Updated successfully"))
-                .catch(e => res.send(`Error has occured: ${e.message}`))
 
-        } else res.send("No changes had been made")
-    } catch (e) {
-        res.status(400).send(e.message)
-
-    }
-};
+    } else throw new ApiError(httpStatus.NOT_MODIFIED, "No changes had been made")
+});
 
 
-export const deleteImage = async (req: Request, res: Response) => {
+export const deleteImage = catchAsync(async (req: Request, res: Response) => {
     const {id} = req.params;
     const query = {_id: new ObjectID(id)};
-    try {
-        const result = await collections[images].findOne(query);
+    const result = await collections[images].findOne(query);
 
-        if (result) {
-            await collections[images].deleteOne(query);
-            res.status(200).send("Image was successfully deleted")
-        }
-    } catch (e) {
-        res.status(400).send("Something went wrong")
-    }
-};
+    if (result) {
+        await collections[images].deleteOne(query);
+        res.status(200).send("Image was successfully deleted")
+    } else throw  new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Sorry something went wrong")
 
-export const deleteAll = async (req: Request, res: Response) => {
-    try {
-        await collections[images].deleteMany({})
-            .then(() => {
-                res.status(201).send("Deleted all images")
-            })
-            .catch(e => {
-                throw new Error(e.message)
-            })
-    } catch (e) {
-        res.status(500).send(`Something went wrong , try again later. Error message: ${e.message}`)
+});
 
-    }
-};
+export const deleteAll = catchAsync(async (req: Request, res: Response) => {
+    await collections[images].deleteMany({})
+        .then(() => {
+            res.status(201).send("Deleted all images")
+        })
+        .catch(e => {
+            throw new ApiError(httpStatus.EXPECTATION_FAILED, e.message)
+        })
+
+});
 
 
