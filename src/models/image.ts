@@ -4,7 +4,7 @@ export default class Image {
         repository: string,
         version: string,
         metadata?: object,
-        public createdAt?: Date,
+        public createdAt: Date = new Date(),
         public updatedAt?: Date
     ) {
     }

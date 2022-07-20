@@ -1,4 +1,4 @@
-export const tokenTypes = {
+export const tokenTypes: { [key: string]: tokenType } = {
     ACCESS: 'access',
     REFRESH: 'refresh',
     RESET_PASSWORD: 'resetPassword',

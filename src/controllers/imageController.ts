@@ -1,13 +1,12 @@
 import {Response, Request} from 'express'
 import {collections} from "../server";
-import {MongoDB_Collections} from "../config";
+import {images, MongoDB_Collections} from "../config";
 import Image from "../models/image";
 import {ObjectID} from "mongodb";
 import {catchAsync} from "../utils/catchAsync";
 import httpStatus = require("http-status");
 import ApiError from "../utils/ApiError";
-
-export const [images, deployments] = MongoDB_Collections;
+import Deployments from "../models/deployments";
 
 
 const getAllCombosOfArray = (arr: Image[], length: number) => {
@@ -46,14 +45,13 @@ export const getCombinations = catchAsync(async (req: Request, res: Response) =>
     } else throw new ApiError(httpStatus.BAD_REQUEST, "Sorry amount of all images is less then the length of array you wanted")
 });
 
-type SortOptions = {
+export type SortOptions = {
     viaCreatedDate?: boolean,
     viaUpdatedDate?: boolean,
     asc?: boolean
 }
-const sortImages = (images: Image[], {viaCreatedDate, viaUpdatedDate = false, asc = true}: SortOptions): Image[] => {
-    let sorted: Image[] = [];
-    console.log(viaCreatedDate);
+export const sortObjects = <T extends { createdAt: Date, updatedAt?: Date }>(images: T[], {viaCreatedDate, viaUpdatedDate = false, asc = true}: SortOptions): T[] => {
+    let sorted: T[] = [];
     if (viaUpdatedDate && viaCreatedDate)
         return images;
     if (!viaCreatedDate && !viaUpdatedDate)
@@ -93,15 +91,20 @@ export const getAllImages = catchAsync(async (req: Request, res: Response) => {
 
     const result = await collections[images].find({}).toArray().then(r => r) as unknown as Image[];
     let sorted: Image[] = result;
-    if (viaCreatedDate) {
-        sorted = sortImages(result, {
-            viaCreatedDate: (viaCreatedDate === "true"),
-            asc: (asc === "true")
-        });
-    }
-    if (viaUpdatedDate) {
-        sorted = sortImages(result, {viaUpdatedDate: (viaUpdatedDate === "true"), asc: (asc === "true")})
-    }
+    sorted = sortObjects<Image>(result, {
+        viaCreatedDate: (viaCreatedDate === "true"),
+        viaUpdatedDate: (viaUpdatedDate === 'true'),
+        asc: (asc === "true")
+    });
+    // if (viaCreatedDate) {
+    //     sorted = sortObjects<Image>(result, {
+    //         viaCreatedDate: (viaCreatedDate === "true"),
+    //         asc: (asc === "true")
+    //     });
+    // }
+    // if (viaUpdatedDate) {
+    //     sorted = sortObjects(result, {viaUpdatedDate: (viaUpdatedDate === "true"), asc: (asc === "true")})
+    // }
     if (sorted) {
         res.status(200).send(sorted)
     } else {

@@ -1,9 +1,10 @@
 export default class User {
     constructor(
-        private name: string,
-        private email: string,
-        private password: string,
-        private role: string = 'user'
+        public name: string,
+        public email: string,
+        public role: string = 'user',
+        public id: string,
+        public password: string
     ) {
     }
 
@@ -12,4 +13,6 @@ export default class User {
         email: this.email,
         role: this.role
     })
+
+
 }

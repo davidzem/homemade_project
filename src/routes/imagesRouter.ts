@@ -8,6 +8,7 @@ import {
     postImage,
     updateImage
 } from "../controllers/imageController";
+import {auth} from "../middleware/auth";
 
 export const imageRoutes = {};
 
@@ -15,17 +16,17 @@ export const imageRoutes = {};
 const imageRouter = Router();
 
 imageRouter.route("/image/all")
-    .get(getAllImages)
-    .delete(deleteAll);
+    .get(auth(["Get_All_Images"]), getAllImages)
+    .delete(auth(['Delete_All_Images']), deleteAll);
 
 imageRouter.route("/image/:id")
-    .get(getImageViaID)
-    .put(updateImage)
-    .delete(deleteImage);
+    .get(auth(['CPUD_Image']), getImageViaID)
+    .put(auth(['CPUD_Image']), updateImage)
+    .delete(auth(['CPUD_Image']), deleteImage);
 
 imageRouter.route("/image")
-    .get(getCombinations)
-    .post(postImage);
+    .get(auth(['Get_All_Images']), getCombinations)
+    .post(auth(['CPUD_Image']), postImage);
 
 
 export default imageRouter

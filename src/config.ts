@@ -12,7 +12,9 @@ export const MONGODB_NAME = process.env.MONGO_DB_NAME;
 export const MONGODB_IMAGES_COLLECTION = "images";
 export const MONGODB_DEPLOYMENTS_COLLECTION = "deployments";
 export const MONGODB_USERS_COLLECTION = "users";
-export const MongoDB_Collections = [MONGODB_IMAGES_COLLECTION, MONGODB_DEPLOYMENTS_COLLECTION, MONGODB_USERS_COLLECTION];
+export const MONGODB_TOKENS_COLLECTION = "tokens";
+export const MongoDB_Collections = [MONGODB_IMAGES_COLLECTION, MONGODB_DEPLOYMENTS_COLLECTION, MONGODB_USERS_COLLECTION, MONGODB_TOKENS_COLLECTION];
+export const [images, deployments, users, tokens] = MongoDB_Collections;
 
 //jwt config
 export const JWT_SECRET = process.env.JWT_SECRET;

@@ -1,5 +1,5 @@
 export default class Deployments {
-    private createdAt: Date;
+    public createdAt: Date;
 
     constructor(private imageID: string) {
     }

@@ -1,9 +1,11 @@
 import {Request, Response} from "express"
 import {collections} from "../server";
-import {deployments} from "./imageController";
 import Deployments from "../models/deployments";
 import * as fs from "fs";
 import {catchAsync} from "../utils/catchAsync";
+import {deployments} from "../config";
+import {sortObjects, SortOptions} from "./imageController";
+import Image from "../models/image";
 
 const path = "C:\\Users\\david\\Desktop\\Coding_stuff\\TSReact\\jobtest\\backend-enso\\count.txt";
 
@@ -23,7 +25,6 @@ const addToCount = async () => {
 
 export const createDeployment = catchAsync(async (req: Request, res: Response) => {
     const {id} = req.params;
-    let count;
 
     const newDeployment: Deployments = new Deployments(id);
     newDeployment.setCreationDate();
@@ -36,9 +37,17 @@ export const createDeployment = catchAsync(async (req: Request, res: Response) =
 
 });
 
+
 export const getAllDeployments = catchAsync(async (req: Request, res: Response) => {
+    let {viaCreatedDate, viaUpdatedDate, asc} = req.query;
     let allDeploys = await collections[deployments].find({}).toArray() as unknown as Deployments[];
-    res.status(200).send(allDeploys)
+    const sorted = sortObjects<Deployments>(allDeploys, {
+        viaCreatedDate: (viaCreatedDate === 'true'),
+        viaUpdatedDate: (viaUpdatedDate === 'true'),
+        asc: (asc === "true")
+    });
+
+    res.status(200).send(sorted)
 });
 
 export const deleteAllDeployments = catchAsync(async (req: Request, res: Response) => {

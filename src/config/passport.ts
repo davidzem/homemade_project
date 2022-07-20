@@ -1,9 +1,9 @@
 import {Strategy as JwtStrategy, ExtractJwt, VerifiedCallback} from 'passport-jwt'
-import {JWT_SECRET, MongoDB_Collections} from "../config";
+import {JWT_SECRET, MongoDB_Collections, users} from "../config";
 import {tokenType, tokenTypes} from "./tokens";
 import {collections} from "../server";
 
-const [images, deploys, users] = MongoDB_Collections;
+
 
 const jwtOptions = {
     secretOrKey: JWT_SECRET,
@@ -17,6 +17,7 @@ type PayloadType = {
 
 const jwtVerify = async (payload: PayloadType, done: VerifiedCallback) => {
     try {
+        console.log(payload);
         let query = payload.sub;
         if (payload.type !== tokenTypes.ACCESS) {
             throw new Error('Invalid token type')
