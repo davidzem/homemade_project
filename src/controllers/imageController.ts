@@ -1,12 +1,11 @@
-import {Response, Request} from 'express'
+import {Request, Response} from 'express'
 import {collections} from "../server";
-import {images, MongoDB_Collections} from "../config";
+import {images} from "../config";
 import Image from "../models/image";
 import {ObjectID} from "mongodb";
 import {catchAsync} from "../utils/catchAsync";
-import httpStatus = require("http-status");
 import ApiError from "../utils/ApiError";
-import Deployments from "../models/deployments";
+import httpStatus = require("http-status");
 
 
 const getAllCombosOfArray = (arr: Image[], length: number) => {
@@ -86,25 +85,34 @@ export const sortObjects = <T extends { createdAt: Date, updatedAt?: Date }>(ima
     return sorted
 };
 
-export const getAllImages = catchAsync(async (req: Request, res: Response) => {
-    let {viaCreatedDate, viaUpdatedDate, asc} = req.query;
+export type PaginationOptions = {
+    shouldPaginate: boolean,
+    pageSize?: number,
+    pageNumber?: number
+}
+export const getPaginatedObjects = async <T>(collectionName: string, {shouldPaginate = false, pageSize = 2, pageNumber = 1}: PaginationOptions): Promise<T[]> => {
+    if (shouldPaginate) {
+        let skips = pageSize * (pageNumber - 1);
 
-    const result = await collections[images].find({}).toArray().then(r => r) as unknown as Image[];
-    let sorted: Image[] = result;
-    sorted = sortObjects<Image>(result, {
+        return await collections[collectionName].find({}).skip(skips).limit(pageSize).toArray().then(r => r) as unknown as T[]
+    }
+    return await collections[collectionName].find({}).toArray().then(r => r) as unknown as T[]
+};
+
+export const getAllImages = catchAsync(async (req: Request, res: Response) => {
+    let {viaCreatedDate, viaUpdatedDate, asc, shouldPaginate, pageSize, pageNumber} = req.query;
+    let paginateOptions: PaginationOptions = {
+        shouldPaginate: shouldPaginate === 'true',
+        pageSize: (pageSize) ? Number(pageSize) : undefined,
+        pageNumber: (pageNumber) ? Number(pageNumber) : undefined
+    };
+    let result = await getPaginatedObjects<Image>(images, paginateOptions);
+    // const result = await collections[images].find({}).toArray().then(r => r) as unknown as Image[];
+    let sorted: Image[] = sortObjects<Image>(result, {
         viaCreatedDate: (viaCreatedDate === "true"),
         viaUpdatedDate: (viaUpdatedDate === 'true'),
         asc: (asc === "true")
     });
-    // if (viaCreatedDate) {
-    //     sorted = sortObjects<Image>(result, {
-    //         viaCreatedDate: (viaCreatedDate === "true"),
-    //         asc: (asc === "true")
-    //     });
-    // }
-    // if (viaUpdatedDate) {
-    //     sorted = sortObjects(result, {viaUpdatedDate: (viaUpdatedDate === "true"), asc: (asc === "true")})
-    // }
     if (sorted) {
         res.status(200).send(sorted)
     } else {

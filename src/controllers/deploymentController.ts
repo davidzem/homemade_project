@@ -4,8 +4,7 @@ import Deployments from "../models/deployments";
 import * as fs from "fs";
 import {catchAsync} from "../utils/catchAsync";
 import {deployments} from "../config";
-import {sortObjects, SortOptions} from "./imageController";
-import Image from "../models/image";
+import {getPaginatedObjects, PaginationOptions, sortObjects} from "./imageController";
 
 const path = "C:\\Users\\david\\Desktop\\Coding_stuff\\TSReact\\jobtest\\backend-enso\\count.txt";
 
@@ -39,8 +38,13 @@ export const createDeployment = catchAsync(async (req: Request, res: Response) =
 
 
 export const getAllDeployments = catchAsync(async (req: Request, res: Response) => {
-    let {viaCreatedDate, viaUpdatedDate, asc} = req.query;
-    let allDeploys = await collections[deployments].find({}).toArray() as unknown as Deployments[];
+    let {viaCreatedDate, viaUpdatedDate, asc, shouldPaginate, pageSize, pageNumber} = req.query;
+    let paginationOptions: PaginationOptions = {
+        shouldPaginate: shouldPaginate === "true",
+        pageSize: (pageSize) ? Number(pageSize) : undefined,
+        pageNumber: (pageNumber) ? Number(pageNumber) : undefined
+    };
+    let allDeploys = await getPaginatedObjects<Deployments>(deployments, paginationOptions);
     const sorted = sortObjects<Deployments>(allDeploys, {
         viaCreatedDate: (viaCreatedDate === 'true'),
         viaUpdatedDate: (viaUpdatedDate === 'true'),
