@@ -12,7 +12,14 @@ const getAllCombosOfArray = (arr: Image[], length: number) => {
     let data = new Array(length);
     let memoryArray: Image[][] = [];
 
-    const combinationUtil = (arr: Image[], data: Image[], startInsideArr: number, endInsideArr: number, indexOfData: number, lengthOfData: number) => {
+    const combinationUtil = (
+        arr: Image[],
+        data: Image[], 
+        startInsideArr: number,
+        endInsideArr: number,
+        indexOfData: number,
+        lengthOfData: number
+    ) => {
 
         if (indexOfData === lengthOfData) {
             let newData = [];
@@ -22,13 +29,26 @@ const getAllCombosOfArray = (arr: Image[], length: number) => {
             memoryArray.push(newData)
         }
 
-        for (let i = startInsideArr; i <= endInsideArr && endInsideArr - i + 1 >= lengthOfData - indexOfData; i++) {
+        for (
+            let i = startInsideArr;
+             i <= endInsideArr && endInsideArr - i + 1 >= lengthOfData - indexOfData;
+             i++
+        ) {
             data[indexOfData] = arr[i];
-            combinationUtil(arr, data, i + 1, endInsideArr, indexOfData + 1, lengthOfData)
+
+            combinationUtil(
+                arr,
+                data,
+                i + 1,
+                endInsideArr,
+                indexOfData + 1,
+                lengthOfData
+            )
         }
     };
+
     combinationUtil(arr, data, 0, arr.length - 1, 0, length);
-    console.log(memoryArray);
+
     return memoryArray
 };
 
@@ -40,8 +60,10 @@ export const getCombinations = catchAsync(async (req: Request, res: Response) =>
 
     if (Number(length) <= allImages.length) {
         memoryArray = getAllCombosOfArray(allImages, Number(length));
-        res.status(httpStatus.OK).send(memoryArray)
-    } else throw new ApiError(httpStatus.BAD_REQUEST, "Sorry amount of all images is less then the length of array you wanted")
+        return res.status(httpStatus.OK).send(memoryArray)
+    }
+
+    throw new ApiError(httpStatus.BAD_REQUEST, "Sorry amount of all images is less then the length of array you wanted")
 });
 
 export type SortOptions = {
@@ -51,34 +73,41 @@ export type SortOptions = {
 }
 export const sortObjects = <T extends { createdAt: Date, updatedAt?: Date }>(images: T[], {viaCreatedDate, viaUpdatedDate = false, asc = true}: SortOptions): T[] => {
     let sorted: T[] = [];
+
     if (viaUpdatedDate && viaCreatedDate)
         return images;
+
     if (!viaCreatedDate && !viaUpdatedDate)
         return images;
-    if (viaCreatedDate) {
-        console.log("Now here");
 
+    if (viaCreatedDate) {
         sorted = images.sort((imageA, imageB) => {
-            console.log(asc);
             if (asc)
                 return Number(imageA.createdAt) - Number(imageB.createdAt);
-            else return Number(imageB.createdAt) - Number(imageA.createdAt)
+
+            return Number(imageB.createdAt) - Number(imageA.createdAt)
         })
     }
+
     if (viaUpdatedDate) {
         sorted = images.sort((imageA, imageB) => {
             let updateDateA = imageA.updatedAt;
             let updateDateB = imageB.updatedAt;
+
             if (updateDateA !== null && updateDateB !== null) {
-                if (asc) {
-                    console.log("Ascending");
+                if (asc)
                     return (Number(updateDateA) - Number(updateDateB));
-                } else return (Number(updateDateB) - Number(updateDateA))
-            } else if (updateDateB === null) {
+
+                return (Number(updateDateB) - Number(updateDateA))
+            }
+
+            if (updateDateB === null)
                 return (Number(updateDateA))
-            } else if (updateDateA === null) {
+
+            if (updateDateA === null)
                 return Number(updateDateB)
-            } else return null
+
+            return null
         })
     }
 
@@ -90,13 +119,25 @@ export type PaginationOptions = {
     pageSize?: number,
     pageNumber?: number
 }
-export const getPaginatedObjects = async <T>(collectionName: string, {shouldPaginate = false, pageSize = 2, pageNumber = 1}: PaginationOptions): Promise<T[]> => {
+
+export const getPaginatedObjects = async <T>(collectionName: string, param: PaginationOptions): Promise<T[]> => {
+    const {shouldPaginate = false, pageSize = 2, pageNumber = 1} = param;
+
     if (shouldPaginate) {
         let skips = pageSize * (pageNumber - 1);
 
-        return await collections[collectionName].find({}).skip(skips).limit(pageSize).toArray().then(r => r) as unknown as T[]
+        return await collections[collectionName]
+            .find({})
+            .skip(skips)
+            .limit(pageSize)
+            .toArray()
+            .then(r => r) as unknown as T[]
     }
-    return await collections[collectionName].find({}).toArray().then(r => r) as unknown as T[]
+
+    return await collections[collectionName]
+        .find({})
+        .toArray()
+        .then(r => r) as unknown as T[]
 };
 
 export const getAllImages = catchAsync(async (req: Request, res: Response) => {
@@ -106,69 +147,69 @@ export const getAllImages = catchAsync(async (req: Request, res: Response) => {
         pageSize: (pageSize) ? Number(pageSize) : undefined,
         pageNumber: (pageNumber) ? Number(pageNumber) : undefined
     };
+
     let result = await getPaginatedObjects<Image>(images, paginateOptions);
     // const result = await collections[images].find({}).toArray().then(r => r) as unknown as Image[];
+
     let sorted: Image[] = sortObjects<Image>(result, {
         viaCreatedDate: (viaCreatedDate === "true"),
         viaUpdatedDate: (viaUpdatedDate === 'true'),
         asc: (asc === "true")
     });
-    if (sorted) {
-        res.status(200).send(sorted)
-    } else {
-        throw  new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Sorry , server mistake")
-    }
 
+    if (sorted)
+        return res.status(200).send(sorted)
+
+    throw  new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Sorry , server mistake");
 });
 
 export const getImageViaID = catchAsync(async (req: Request, res: Response) => {
     const {id} = req.params;
-    const query = {
-        _id: new ObjectID(id)
-    };
+    const query = {_id: new ObjectID(id)};
     const result = (await collections[images].findOne(query)) as unknown as Image;
-    if (result) {
-        res.status(201).send(result)
-    } else {
-        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Sorry , server mistake")
-    }
 
+    if (result) return res.status(201).send(result);
+
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Sorry , server mistake");
 });
 
 
 export const postImage = catchAsync(async (req: Request, res: Response) => {
     const image = req.body;
 
-    if (!image.createdAt) {
-        image.createdAt = new Date()
-    }
+    if (!image.createdAt)
+        image.createdAt = new Date();
+
     let existingImage = await collections[images].findOne({name: image.name});
+
     if (existingImage) {
         res.status(400).send(`Sorry an image with the same name is already exists under id ${existingImage._id}`);
         return
     }
+
     await collections[images].insertOne(image)
         .then(r => res.status(201).send({message: `Successfully created an image `, data: r})
         )
         .catch(e => {
             throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Sorry server mistake")
         })
-
 });
 
 
 export const updateImage = catchAsync(async (req: Request, res: Response) => {
     const {id} = req.params;
+
     const updatedParty: any = {
         name: req.body.name,
         repository: req.body.repository,
         version: req.body.version,
         metadata: req.body.metadata
     };
+
     const query = {_id: new ObjectID(id)};
     let shouldUpdate: boolean = false;
     let previousData = await collections[images].findOne(query);
-    console.log(previousData);
+
     Object.keys(updatedParty).map(key => {
         if (typeof updatedParty[`${key}`] !== "object" && typeof previousData[`${key}`] !== "object") {
             if (previousData[`${key}`] !== updatedParty[`${key}`]) {
@@ -180,7 +221,7 @@ export const updateImage = catchAsync(async (req: Request, res: Response) => {
             shouldUpdate = !(JSON.stringify(previousData[`${key}`]) === JSON.stringify(updatedParty[`${key}`]))
         }
     });
-    console.log(shouldUpdate);
+
     if (shouldUpdate) {
         await collections[images].updateOne(query, {
             $set: {
@@ -205,9 +246,10 @@ export const deleteImage = catchAsync(async (req: Request, res: Response) => {
 
     if (result) {
         await collections[images].deleteOne(query);
-        res.status(200).send("Image was successfully deleted")
-    } else throw  new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Sorry something went wrong")
+        return res.status(200).send("Image was successfully deleted")
+    }
 
+    throw  new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Sorry something went wrong")
 });
 
 export const deleteAll = catchAsync(async (req: Request, res: Response) => {

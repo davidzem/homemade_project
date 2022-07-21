@@ -14,8 +14,8 @@ export default class Image {
     public getCreationDate = () => this.createdAt;
 
     public getUpdatedDate = () => {
-        if (this.updatedAt) {
-            return this.updatedAt
-        } else return null
+        if (this.updatedAt)
+            return this.updatedAt;
+        return null
     }
 }

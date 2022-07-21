@@ -12,19 +12,23 @@ const generateToken = (userId: string, expires: Moment, type: tokenType, secret 
         exp: expires.unix(),
         type
     };
+
     return jwt.sign(payload, secret)
 };
 
-const saveToken = async (token: string, userID: string, expires: Moment,
-                         type: tokenType, blacklisted = false
-) => {
-    return await collections[tokens].insertOne({
-        token,
-        user: userID,
-        expires: expires.toDate(),
-        type,
-        blacklisted
-    })
+const saveToken = async (token: string,
+                         userID: string,
+                         expires: Moment,
+                         type: tokenType,
+                         blacklisted = false) => {
+    return await collections[tokens]
+        .insertOne({
+            token,
+            user: userID,
+            expires: expires.toDate(),
+            type,
+            blacklisted
+        })
 };
 
 const verifyToken = async (token: string, type: tokenType) => {
@@ -32,7 +36,9 @@ const verifyToken = async (token: string, type: tokenType) => {
     const tokenDoc = await collections[tokens].findOne({
         token, type, user: payload.sub, blacklisted: false
     });
-    if (!tokenDoc) throw new Error('Token not found')
+
+    if (!tokenDoc)
+        throw new Error('Token not found');
     return tokenDoc
 };
 
@@ -42,6 +48,7 @@ export const generateAuthToken = async (user: User) => {
 
     const refreshTokenExpires = moment().add(JWT_REFRESH_EXPIRATION_DAYS, 'days');
     const refreshToken = generateToken(user.id, refreshTokenExpires, tokenTypes.REFRESH);
+
     await saveToken(refreshToken, user.id, refreshTokenExpires, tokenTypes.REFRESH);
 
     return {

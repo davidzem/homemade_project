@@ -8,14 +8,18 @@ import httpStatus = require("http-status");
 
 
 export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
-    const allUsers = await collections[users].find({}).toArray() as unknown as User[];
+    const allUsers = await collections[users]
+        .find({})
+        .toArray() as unknown as User[];
+
     if (allUsers)
-        res.send(allUsers);
-    else
-        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Couldn't get users from db")
+        return res.send(allUsers);
+
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Couldn't get users from db")
 });
 
 export const deleteAllUsers = catchAsync(async (req: Request, res: Response) => {
     const allUsers = await collections[users].deleteMany({});
-    res.send("Delted all users")
+
+    return res.send("Delted all users")
 });

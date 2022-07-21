@@ -30,3 +30,25 @@ imageRouter.route("/image")
 
 
 export default imageRouter
+
+/**
+ * @swagger
+ * tags:
+ *      name: Images
+ *      desription: Registry to manipulate over images.
+ * **/
+
+/**
+ * @swagger
+ * /image/all:
+ *  get:
+ *      summary: Gets all created images
+ *      description: Only admins may retrieve all images.
+ *      tags:[Images]
+ *      security:
+ *          - bearerAuth:[]
+ *      parameters:
+ *          - in: query
+ *          name:name
+ *
+ * **/

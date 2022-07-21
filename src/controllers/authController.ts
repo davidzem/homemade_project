@@ -37,11 +37,14 @@ const loginWithEmailAndPassword = async (email: string, password: string) => {
 
 export const register = catchAsync(async (req: Request, res: Response) => {
     const user = req.body as unknown as User;
+
     if (await isEmailTaken(user.email))
         throw new ApiError(httpStatus.BAD_REQUEST, 'Email is alredy taken');
+
     const newUser = await collections[users].insertOne(user) as unknown as User;
     const token = await generateAuthToken(newUser);
-    res.send({user, token})
+
+    return res.send({user, token})
 });
 
 export const login = catchAsync(async (req: Request, res: Response) => {
@@ -51,18 +54,21 @@ export const login = catchAsync(async (req: Request, res: Response) => {
 
     let tokens = await generateAuthToken(user);
 
-    res.send({user, tokens})
-
+    return res.send({user, tokens})
 });
 
 export const logout = catchAsync(async (req: Request, res: Response) => {
     const {refreshToken} = req.body;
-    const refreshTokenDoc = await collections[tokens].findOne({
-        token: refreshToken,
-        type: tokenTypes.REFRESH,
-        blacklisted: false
-    });
+    const refreshTokenDoc = await collections[tokens]
+        .findOne({
+            token: refreshToken,
+            type: tokenTypes.REFRESH,
+            blacklisted: false
+        });
+
     if (!refreshTokenDoc) throw new ApiError(httpStatus.NOT_FOUND, "Not found");
-    await refreshTokenDoc.remove()
+
+    await refreshTokenDoc
+        .remove()
         .then(() => res.status(httpStatus.NO_CONTENT).send())
 });

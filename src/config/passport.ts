@@ -4,7 +4,6 @@ import {tokenType, tokenTypes} from "./tokens";
 import {collections} from "../server";
 
 
-
 const jwtOptions = {
     secretOrKey: JWT_SECRET,
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken()
@@ -16,21 +15,22 @@ type PayloadType = {
 }
 
 const jwtVerify = async (payload: PayloadType, done: VerifiedCallback) => {
+    let query = payload.sub;
+
     try {
-        console.log(payload);
-        let query = payload.sub;
-        if (payload.type !== tokenTypes.ACCESS) {
+        if (payload.type !== tokenTypes.ACCESS)
             throw new Error('Invalid token type')
-        }
+
         const user = await collections[users].findOne({query});
-        if (!user) {
+
+        if (!user)
             return done(null, false)
-        }
+
         done(null, user)
+
     } catch (e) {
         done(e, false)
     }
-
 };
 
 
